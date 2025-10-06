@@ -15,7 +15,7 @@
     .stack{display:grid;gap:12px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .field, select{border:1px solid #dfe8fb;border-radius:12px;padding:.6em .8em;min-width:0}
-    .btn{border:0;border-radius:12px;padding:.5em .9em;font-weight:700;cursor:pointer}
+    .btn{appearance:none;border:0;cursor:pointer;padding:14px 18px;min-height:44px;min-width:120px;border-radius:16px;font-weight:700}
     .btn-primary{background:var(--brand);color:#fff}
     .btn-soft{background:#f6f9ff;border:1px solid #dfe8fb;color:var(--brand)}
     .btn-danger{background:#ffe8e8;color:#a23}
@@ -169,8 +169,32 @@
 
   <script type="module">
     // Same module bootstrap used on rsvp page
-    const { supabase } = await import('/wedding/assets/app.js');
+    const { supabase } = await import('./assets/app.js');
     const $ = s => document.querySelector(s);
+
+    // --- Robust group schema handling ---
+    let GROUP_NAME_COL = 'name'; // fallback
+    async function detectGroupNameColumn(){
+      try{
+        let test = await supabase.from('groups').select('id,name').limit(1);
+        if(test.error){
+          let test2 = await supabase.from('groups').select('id,group_name').limit(1);
+          if(!test2.error){ GROUP_NAME_COL = 'group_name'; }
+        } else {
+          GROUP_NAME_COL = 'name';
+        }
+      }catch(e){ /* keep default */ }
+    }
+    function groupNameOf(row){ return row?.[GROUP_NAME_COL] || row?.name || row?.group_name || ''; }
+    function setStatusErr(error){
+      try{
+        const msg = (error && (error.message||error.msg)) || 'Unknown error';
+        const details = error && (error.details || error.hint || error.code) || '';
+        setStatus(`Error: ${msg}${details? ' — '+details:''}`, 'err');
+        console.error('Supabase error:', error);
+      }catch(e){ setStatus('Operation failed','err'); }
+    }
+
 
     const statusEl=$('#status'), loginBlock=$('#loginBlock'), dash=$('#dash');
     const tabs=$('#tabs'), dropdown=$('#viewSelect');
@@ -235,7 +259,9 @@
 
     // Groups
     async function loadGroups(prefill){
-      const { data } = await supabase.from('groups').select('id,name').order('name');
+      await detectGroupNameColumn();
+      const { data, error:lgErr } = await supabase.from('groups').select(`id, ${GROUP_NAME_COL}`).order(GROUP_NAME_COL);
+      if(lgErr){ setStatusErr(lgErr); return; }
       groupSelect.innerHTML=(data||[]).map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
       if(prefill){
         const m=(data||[]).find(x=>x.name===prefill);
@@ -245,10 +271,11 @@
     }
     $('#createGroup').addEventListener('click', async ()=>{
       const name=$('#newGroupName').value.trim(); if(!name) return setStatus('Enter a group name','err');
-      const { error } = await supabase.from('groups').insert([{ name }]);
-      if(error) return setStatus('Create failed: '+error.message,'err');
+      const payload = {}; payload[GROUP_NAME_COL]=name;
+      const { error, data } = await supabase.from('groups').insert([ payload ]).select(`id, ${GROUP_NAME_COL}`);
+      if(error){ setStatusErr(error); return; }
       $('#newGroupName').value=''; await loadGroups(name);
-      CURRENT_GROUP=name; await showGroup(CURRENT_GROUP); setStatus('Group created','ok');
+      CURRENT_GROUP=name; await showGroup(CURRENT_GROUP);
     });
     $('#renameGroup').addEventListener('click', async ()=>{
       if(!groupSelect.value) return setStatus('Select a group','err');
