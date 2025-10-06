@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Admin — Simon & Charlyn</title>
+  <!-- same stylesheet/background/typography used by index + rsvp -->
+  <link rel="stylesheet" href="assets/styles.css" />
+  <style>
+    /* Keep CSS minimal so we inherit the site look from assets/styles.css */
+    :root{ --brand:#3e68a0; --soft:#e9effb; --paper:#fff; }
+    *{box-sizing:border-box}
+    html,body{max-width:100%;overflow-x:hidden}
+
+    .stack{display:grid;gap:12px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .field, select{border:1px solid #dfe8fb;border-radius:12px;padding:.6em .8em;min-width:0}
+    .btn{border:0;border-radius:12px;padding:.5em .9em;font-weight:700;cursor:pointer}
+    .btn-primary{background:var(--brand);color:#fff}
+    .btn-soft{background:#f6f9ff;border:1px solid #dfe8fb;color:var(--brand)}
+    .btn-danger{background:#ffe8e8;color:#a23}
+
+    /* Summary chips under the hero, matching your chip style */
+    .metrics{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+    .metric{background:#f6f9fe;color:var(--brand);padding:.34em .7em;border-radius:999px;font-weight:700}
+
+    /* Tabs (desktop) and the matching mobile dropdown to avoid layout shift */
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+    .tab{border:0;border-radius:999px;background:var(--soft);color:var(--brand);padding:.5em 1em;font-weight:700}
+    .tab.active{background:var(--brand);color:#fff;box-shadow:0 6px 18px rgba(62,104,160,.18)}
+    .view-select{display:none}
+    @media (max-width:720px){ .tabs{display:none} .view-select{display:flex;justify-content:center} }
+
+    /* Desktop table keeps your card look */
+    .table-wrap{border-radius:14px;background:#fff;box-shadow:0 8px 26px rgba(62,104,160,.08);min-height:45vh}
+    table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+    thead th{position:sticky;top:0;background:#fff;color:var(--brand);font-weight:800;padding:12px;border-bottom:1px solid #e9effb;text-align:left}
+    tbody td{padding:12px;border-bottom:1px solid #f1f4ff}
+    tbody tr:hover td{background:#fafcff}
+    td:last-child{text-align:right}
+    th:nth-child(1),td:nth-child(1){width:36%}
+    th:nth-child(2),td:nth-child(2){width:24%}
+    th:nth-child(3),td:nth-child(3){width:14%;text-align:center}
+    th:nth-child(4),td:nth-child(4){width:16%}
+    th:nth-child(5),td:nth-child(5){width:10%}
+
+    /* Mobile list — compact two lines per guest, no side scroll */
+    @media (max-width:720px){
+      .table-wrap{display:none}
+      .list{display:grid;gap:8px;min-height:45vh}
+      .mrow{border:1px solid #e9effb;background:#fff;border-radius:12px;box-shadow:0 4px 12px rgba(62,104,160,.06);padding:8px 10px;display:flex;flex-direction:column}
+      .mline1,.mline2{display:flex;align-items:center;gap:8px;width:100%}
+      .mline1{justify-content:space-between}
+      .mname{font-weight:800;font-size:1rem;min-width:0}
+      .mline2{margin-top:4px}
+      .mgroup{color:var(--brand);opacity:.9;font-size:.92rem}
+      .pill{border:1px solid #dfe8fb;background:#f7fbff;color:var(--brand);border-radius:999px;padding:.22em .55em;font-weight:700;font-size:.88rem}
+      .pill.has{background:#dff0ff}
+      .icon-btn{border:1px solid #ffd7d7;background:#fff;color:#a23;border-radius:999px;padding:.22em .55em;font-weight:800;font-size:.88rem}
+      .mspacer{flex:1}
+    }
+
+    /* Keep heights steady to prevent page “jump” between tabs */
+    #groupTools{min-height:108px}
+    #status{text-align:center;opacity:.9}
+    #status.ok{color:#2a7} #status.err{color:#b22}
+
+    /* Notes modal (shared look with your success modal) */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:50}
+    .modal{width:min(92vw,520px);background:#fff;border-radius:16px;padding:18px;box-shadow:0 25px 60px rgba(0,0,0,.22)}
+    .modal h3{margin:0;color:var(--brand);font-family:"Cormorant Garamond",serif}
+    .modal textarea{width:100%;min-height:120px;border:1px solid #dfe8fb;border-radius:12px;padding:.8em}
+    .modal .row{justify-content:flex-end;margin-top:10px}
+  </style>
+</head>
+<body>
+  <!-- Same page chrome: wrap -> main.card -> header.hero (like index & rsvp) -->
+  <div class="wrap">
+    <main class="card" role="main">
+      <header class="hero">
+        <div class="overline">PRIVATE</div>
+        <h1 class="names"><span class="name-top">Admin</span></h1>
+      </header>
+
+      <!-- Summary chips (same spot as countdown/cta live on other pages) -->
+      <section class="metrics">
+        <div class="metric" id="m-total">Total: 0</div>
+        <div class="metric" id="m-yes">Attending: 0</div>
+        <div class="metric" id="m-no">Declined: 0</div>
+        <div class="metric" id="m-pending">Pending: 0</div>
+      </section>
+
+      <!-- Login block -->
+      <section id="loginBlock" class="stack">
+        <div class="row" style="justify-content:center">
+          <input id="adminEmail" type="email" class="field" placeholder="Admin email" />
+          <input id="adminPass" type="password" class="field" placeholder="Password" />
+          <button class="btn btn-primary" id="adminLogin">Sign in</button>
+        </div>
+        <div id="status">Ready</div>
+      </section>
+
+      <!-- Tabs (desktop) / dropdown (mobile) -->
+      <section id="dash" class="stack hidden">
+        <div class="tabs" id="tabs">
+          <button class="tab active" data-tab="group">Groups</button>
+          <button class="tab" data-tab="yes">Attending</button>
+          <button class="tab" data-tab="no">Not Attending</button>
+          <button class="tab" data-tab="pending">Pending</button>
+          <button class="tab" data-tab="settings">Settings</button>
+        </div>
+        <div class="view-select">
+          <select id="viewSelect" aria-label="Select admin view">
+            <option value="group" selected>Groups</option>
+            <option value="yes">Attending</option>
+            <option value="no">Not Attending</option>
+            <option value="pending">Pending</option>
+            <option value="settings">Settings</option>
+          </select>
+        </div>
+
+        <!-- Group tools (compact) -->
+        <section id="groupTools" class="stack">
+          <div class="row">
+            <input id="newGroupName" class="field" placeholder="New group e.g. Dass Family" />
+            <button class="btn btn-primary" id="createGroup">Create</button>
+            <select id="groupSelect" class="field" style="max-width:280px"></select>
+            <button class="btn btn-soft" id="renameGroup">Rename</button>
+            <button class="btn btn-danger" id="deleteGroup">Delete</button>
+          </div>
+          <div class="row">
+            <input id="guestNameNew" class="field" placeholder="Guest name" />
+            <button class="btn btn-primary" id="addGuest">＋ Add guest to selected group</button>
+          </div>
+        </section>
+
+        <!-- Data areas (auto switch desktop/mobile) -->
+        <div id="tableArea" class="table-wrap">
+          <table id="guestTable" aria-live="polite">
+            <thead><tr><th>Name</th><th>Group</th><th>Attending</th><th>Notes</th><th>Delete</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="listArea" class="list hidden"></div>
+
+        <!-- Settings tab (RSVP password only, to keep the main views clean) -->
+        <section id="settingsPanel" class="stack hidden">
+          <div class="overline">RSVP password</div>
+          <div class="row">
+            <input id="newPass" class="field" placeholder="New password" />
+            <button class="btn btn-soft" id="setPass">Update password</button>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">Code And Design By © Simon Dass</footer>
+
+  <!-- Notes modal -->
+  <div id="noteModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="noteTitle">
+      <h3 id="noteTitle">Dietary notes</h3>
+      <div id="noteGuest" class="overline" style="margin:6px 0 8px"></div>
+      <textarea id="noteText" placeholder="Add dietary needs, allergies, preferences…"></textarea>
+      <div class="row"><button id="saveNote" class="btn btn-primary">Save</button><button id="closeNote" class="btn btn-soft">Close</button></div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Same module bootstrap used on rsvp page
+    const { supabase } = await import('/assets/app.js');
+    const $ = s => document.querySelector(s);
+
+    const statusEl=$('#status'), loginBlock=$('#loginBlock'), dash=$('#dash');
+    const tabs=$('#tabs'), dropdown=$('#viewSelect');
+    const groupTools=$('#groupTools'), tableArea=$('#tableArea'), listArea=$('#listArea'), settingsPanel=$('#settingsPanel');
+    const groupSelect=$('#groupSelect'), tbody=document.querySelector('#guestTable tbody');
+
+    let CURRENT_GROUP=null, ACTIVE='group', noteGuestId=null;
+    const setStatus=(t,cls='')=>{ if(statusEl){ statusEl.textContent=t; statusEl.className=cls; } };
+    const isMobile = ()=> matchMedia('(max-width:720px)').matches;
+
+    try{
+      const { error } = await supabase.from('settings').select('key').limit(1);
+      setStatus(error? 'Cannot reach Supabase' : 'Connected to Supabase ✔', error?'err':'ok');
+    }catch{ setStatus('Failed to init Supabase','err'); }
+
+    // Login (mirrors your pattern)
+    $('#adminLogin').addEventListener('click', async ()=>{
+      const email=$('#adminEmail').value.trim(), pass=$('#adminPass').value.trim();
+      if(!email||!pass) return setStatus('Enter email & password','err');
+      setStatus('Signing in…');
+      const { error } = await supabase.auth.signInWithPassword({ email, password:pass });
+      if(error) return setStatus('Login failed: '+error.message,'err');
+      loginBlock.classList.add('hidden'); dash.classList.remove('hidden');
+      await boot(); setStatus('Dashboard ready','ok');
+    });
+
+    async function boot(){
+      await supabase.from('groups').select('id').limit(1);
+      await loadGroups(); await refreshSummary();
+      if(groupSelect.value){
+        CURRENT_GROUP = groupSelect.options[groupSelect.selectedIndex].textContent;
+        await showGroup(CURRENT_GROUP);
+      } else { render([]); }
+      flipViewVisibility();
+    }
+
+    // Tabs & dropdown
+    tabs.addEventListener('click', async e=>{
+      const b=e.target.closest('.tab'); if(!b) return;
+      tabs.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); ACTIVE=b.dataset.tab; dropdown.value=ACTIVE; await handleViewChange();
+    });
+    dropdown.addEventListener('change', async ()=>{
+      ACTIVE=dropdown.value; tabs.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active', x.dataset.tab===ACTIVE)); await handleViewChange();
+    });
+    addEventListener('resize', flipViewVisibility);
+    function flipViewVisibility(){
+      const showData = ACTIVE !== 'settings';
+      const mobile = isMobile();
+      tableArea.classList.toggle('hidden', !showData || mobile);
+      listArea.classList.toggle('hidden', !showData || !mobile);
+      groupTools.classList.toggle('hidden', ACTIVE!=='group');
+      settingsPanel.classList.toggle('hidden', ACTIVE!=='settings');
+    }
+    async function handleViewChange(){
+      flipViewVisibility();
+      if(ACTIVE==='group') await showGroup(CURRENT_GROUP);
+      if(ACTIVE==='yes') await showAttending(true);
+      if(ACTIVE==='no') await showAttending(false);
+      if(ACTIVE==='pending') await showPending();
+    }
+
+    // Groups
+    async function loadGroups(prefill){
+      const { data } = await supabase.from('groups').select('id,name').order('name');
+      groupSelect.innerHTML=(data||[]).map(g=>`<option value="${g.id}">${g.name}</option>`).join('');
+      if(prefill){
+        const m=(data||[]).find(x=>x.name===prefill);
+        if(m) groupSelect.value=m.id;
+      }
+      if(!groupSelect.value && data?.length){ groupSelect.value = data[0].id; }
+    }
+    $('#createGroup').addEventListener('click', async ()=>{
+      const name=$('#newGroupName').value.trim(); if(!name) return setStatus('Enter a group name','err');
+      const { error } = await supabase.from('groups').insert([{ name }]);
+      if(error) return setStatus('Create failed: '+error.message,'err');
+      $('#newGroupName').value=''; await loadGroups(name);
+      CURRENT_GROUP=name; await showGroup(CURRENT_GROUP); setStatus('Group created','ok');
+    });
+    $('#renameGroup').addEventListener('click', async ()=>{
+      if(!groupSelect.value) return setStatus('Select a group','err');
+      const old = groupSelect.options[groupSelect.selectedIndex].textContent;
+      const neo = prompt('New group name:', old); if(!neo||neo===old) return;
+      const { error } = await supabase.from('groups').update({ name: neo }).eq('id', groupSelect.value);
+      if(error) return setStatus('Rename failed: '+error.message,'err');
+      await supabase.from('guests').update({ group_name: neo, updated_at:new Date().toISOString() }).eq('group_name', old);
+      await loadGroups(neo); CURRENT_GROUP=neo; await showGroup(CURRENT_GROUP); setStatus('Group renamed','ok');
+    });
+    $('#deleteGroup').addEventListener('click', async ()=>{
+      if(!groupSelect.value) return setStatus('Select a group','err');
+      const name=groupSelect.options[groupSelect.selectedIndex].textContent;
+      if(!confirm(`Delete “${name}” and all its guests?`)) return;
+      await supabase.from('guests').delete().eq('group_name', name);
+      const { error } = await supabase.from('groups').delete().eq('id', groupSelect.value);
+      if(error) return setStatus('Delete failed','err');
+      await loadGroups(); CURRENT_GROUP=null; render([]); await refreshSummary(); setStatus('Group deleted','ok');
+    });
+    groupSelect.addEventListener('change', async ()=>{
+      CURRENT_GROUP = groupSelect.options[groupSelect.selectedIndex]?.textContent || null;
+      await showGroup(CURRENT_GROUP);
+    });
+
+    // Views
+    async function showGroup(name){
+      if(!name){ render([]); return; }
+      const { data, error } = await supabase.from('guests').select('*').eq('group_name', name).order('name');
+      if(error){ setStatus('Failed to load guests','err'); return; }
+      render(data||[]); await refreshSummary();
+    }
+    async function showAttending(val){
+      const { data, error } = await supabase.from('guests')
+        .select('id,name,group_name,attending,dietary')
+        .eq('attending', val).order('group_name').order('name');
+      if(error){ setStatus('Failed to load list','err'); return; }
+      render(data||[]);
+    }
+    async function showPending(){
+      const { data, error } = await supabase.from('guests')
+        .select('id,name,group_name,attending,dietary')
+        .is('attending', null).order('group_name').order('name');
+      if(error){ setStatus('Failed to load list','err'); return; }
+      render(data||[]);
+    }
+
+    // Render (desktop vs mobile)
+    function render(rows){
+      if(isMobile()){
+        listArea.innerHTML = (rows||[]).map(r=>{
+          const has=(r.dietary||'').trim().length>0;
+          return `<div class="mrow" data-id="${r.id}">
+            <div class="mline1">
+              <div class="mname">${escapeHtml(r.name||'')}</div>
+              <label class="mtoggle"><input type="checkbox" data-id="${r.id}" data-field="attending" ${r.attending?'checked':''}><span>Attending</span></label>
+            </div>
+            <div class="mline2">
+              <span class="mgroup">${escapeHtml(r.group_name||'')}</span>
+              <button class="pill ${has?'has':''} note-btn" data-id="${r.id}" data-name="${escapeHtml(r.name||'')}" data-notes="${escapeHtml(r.dietary||'')}">Notes</button>
+              <span class="mspacer"></span>
+              <button class="icon-btn" data-action="del" data-id="${r.id}">Delete</button>
+            </div>
+          </div>`;
+        }).join('') || '<div class="overline" style="text-align:center">No guests</div>';
+
+        tableArea.classList.add('hidden'); listArea.classList.remove('hidden'); tbody.innerHTML=''; return;
+      }
+      tableArea.classList.remove('hidden'); listArea.classList.add('hidden');
+      tbody.innerHTML = (rows||[]).map(r=>{
+        const has=(r.dietary||'').trim().length>0;
+        return `<tr>
+          <td contenteditable data-id="${r.id}" data-field="name">${escapeHtml(r.name||'')}</td>
+          <td>${escapeHtml(r.group_name||'')}</td>
+          <td style="text-align:center"><input type="checkbox" data-id="${r.id}" data-field="attending" ${r.attending?'checked':''}></td>
+          <td><button class="btn btn-soft note-btn" data-id="${r.id}" data-name="${escapeHtml(r.name||'')}" data-notes="${escapeHtml(r.dietary||'')}">${has?'Notes*':'Notes'}</button></td>
+          <td><button class="btn btn-danger" data-action="del" data-id="${r.id}">Delete</button></td>
+        </tr>`;
+      }).join('');
+    }
+
+    const escapeHtml = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const unescapeHtml = s => { const p=document.createElement('p'); p.innerHTML=s; return p.textContent||''; };
+
+    // Actions
+    document.addEventListener('change', async e=>{
+      if(e.target.matches('input[type="checkbox"][data-field="attending"]')){
+        const id=e.target.dataset.id;
+        const { error } = await supabase.from('guests').update({ attending:e.target.checked }).eq('id', id);
+        if(error) return setStatus('Update failed','err');
+        await refreshCurrentView(); await refreshSummary();
+      }
+    });
+    document.addEventListener('blur', async e=>{
+      const fld=e.target?.dataset?.field; if(!fld||fld==='dietary') return;
+      const id=e.target.dataset.id; const value=e.target.textContent.trim();
+      const { error } = await supabase.from('guests').update({ [fld]: value }).eq('id', id);
+      if(error) setStatus('Update failed','err');
+    }, true);
+    document.addEventListener('click', async e=>{
+      const del=e.target.closest('button[data-action="del"]');
+      if(del){
+        if(!confirm('Delete this guest?')) return;
+        const id=del.dataset.id;
+        const { error } = await supabase.from('guests').delete().eq('id', id);
+        if(error) return setStatus('Delete failed','err');
+        await refreshCurrentView(); await refreshSummary(); return;
+      }
+      const nbtn=e.target.closest('button.note-btn');
+      if(nbtn){
+        noteGuestId=nbtn.dataset.id;
+        $('#noteGuest').textContent=nbtn.dataset.name || '';
+        $('#noteText').value=unescapeHtml(nbtn.dataset.notes||'');
+        openModal();
+      }
+    });
+    async function refreshCurrentView(){
+      if(ACTIVE==='group') await showGroup(CURRENT_GROUP);
+      if(ACTIVE==='yes') await showAttending(true);
+      if(ACTIVE==='no') await showAttending(false);
+      if(ACTIVE==='pending') await showPending();
+    }
+    async function refreshSummary(){
+      const { data } = await supabase.from('guests').select('attending');
+      const total=(data||[]).length, yes=(data||[]).filter(x=>x.attending===true).length, no=(data||[]).filter(x=>x.attending===false).length, pending=total-yes-no;
+      document.getElementById('m-total').textContent=`Total: ${total}`;
+      document.getElementById('m-yes').textContent=`Attending: ${yes}`;
+      document.getElementById('m-no').textContent=`Declined: ${no}`;
+      document.getElementById('m-pending').textContent=`Pending: ${pending}`;
+    }
+
+    // Robust “Add guest” handler (ensures a selected group and shows progress)
+    const addBtn = document.querySelector('#addGuest');
+    addBtn.removeEventListener?.('click', window.__addGuestHandler);
+    window.__addGuestHandler = async function addGuestToGroup(){
+      const groupId = groupSelect.value;
+      if(!groupId) return setStatus('Please select a group first','err');
+      const groupName = groupSelect.options[groupSelect.selectedIndex].textContent.trim();
+      const nameInput = document.querySelector('#guestNameNew');
+      const name = (nameInput.value || '').trim();
+      if(!name) return setStatus('Enter guest name','err');
+
+      addBtn.disabled = true;
+      const prev = addBtn.textContent; addBtn.textContent = 'Adding…';
+      const { error } = await supabase.from('guests').insert([{ name, group_name: groupName }]);
+      addBtn.disabled = false; addBtn.textContent = prev;
+
+      if(error) return setStatus('Add failed: '+error.message,'err');
+      nameInput.value = ''; CURRENT_GROUP = groupName;
+      await showGroup(CURRENT_GROUP); await refreshSummary(); setStatus('Guest added','ok');
+    };
+    addBtn.addEventListener('click', window.__addGuestHandler);
+
+    // Password settings
+    document.getElementById('setPass').addEventListener('click', async ()=>{
+      const v=document.getElementById('newPass').value.trim(); if(!v) return setStatus('Enter password','err');
+      let { data, error } = await supabase.from('settings').update({ value:v, updated_at:new Date().toISOString() }).eq('key','rsvp_password');
+      if(error || (Array.isArray(data)&&data.length===0)){
+        const ins = await supabase.from('settings').insert([{ key:'rsvp_password', value:v }]);
+        if(ins.error) return setStatus('Password update failed','err');
+      }
+      setStatus('Password updated','ok'); document.getElementById('newPass').value='';
+    });
+
+    // Notes modal
+    const modal=document.getElementById('noteModal');
+    const openModal=()=>{ modal.style.display='flex'; document.getElementById('noteText').focus(); };
+    const closeModal=()=>{ modal.style.display='none'; };
+    document.getElementById('closeNote').addEventListener('click', closeModal);
+    modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); });
+    document.addEventListener('keydown', e=>{ if(e.key==='Escape' && modal.style.display==='flex') closeModal(); });
+    document.getElementById('saveNote').addEventListener('click', async ()=>{
+      const text=document.getElementById('noteText').value.trim(); if(!noteGuestId) return;
+      const { error } = await supabase.from('guests').update({ dietary:text, updated_at:new Date().toISOString() }).eq('id', noteGuestId);
+      if(error) return setStatus('Could not save notes','err');
+      closeModal(); await refreshCurrentView(); setStatus('Notes saved','ok');
+    });
+  </script>
+  <script type="module" src="assets/admin_codewall_patch.js"></script>
+</body>
+</html>
+
+

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Simon & Charlyn — RSVP</title>
+  <link rel="stylesheet" href="assets/styles.css">
+<link rel="icon" href="assets/images/favicon.png" type="image/png">
+</head>
+<body>
+  <div class="wrap">
+    <main class="card" role="main">
+      <header class="hero">
+        <div class="overline">Kindly join us for the wedding of</div>
+        <h1 class="names">
+          <span class="name-top">SIMON</span>
+          <span class="and">and</span>
+          <span class="name-bottom">CHARLYN</span>
+        </h1>
+        <div class="date">Saturday 7th Feb 2026</div>
+        <div class="time">at 3 o’clock in the afternoon</div>
+        <div class="script">Reception to follow</div>
+<div id="countdown" class="countdown" title="Countdown to 3:00 PM 7 Feb 2026">
+  <div class="cd-seg"><div class="cd-num" id="cd-days">0</div><div class="cd-lbl">Days</div></div>
+  <div class="cd-seg"><div class="cd-num" id="cd-hours">0</div><div class="cd-lbl">Hours</div></div>
+  <div class="cd-seg"><div class="cd-num" id="cd-mins">0</div><div class="cd-lbl">Minutes</div></div>
+  <div class="cd-seg"><div class="cd-num" id="cd-secs">0</div><div class="cd-lbl">Seconds</div></div>
+</div>
+<div class="cd-note">Until our wedding day</div>
+
+      </header>
+
+      <div class="cta">
+        <a href="rsvp.html" class="btn">RSVP</a>
+      </div>
+    </main>
+  </div>
+
+  <footer class="site-footer">Code And Design By © Simon Dass</footer>
+
+<script>
+// Countdown to Feb 7, 2026 3:00 PM Australia/Melbourne (AEDT, UTC+11)
+const target = new Date('2026-02-07T15:00:00+11:00').getTime();
+const daysEl = document.getElementById('cd-days');
+const hoursEl = document.getElementById('cd-hours');
+const minsEl = document.getElementById('cd-mins');
+const secsEl = document.getElementById('cd-secs');
+let tickId;
+
+function tick(){
+  const now = Date.now();
+  let diff = Math.max(0, target - now);
+  const d = Math.floor(diff / (1000*60*60*24)); diff -= d*24*60*60*1000;
+  const h = Math.floor(diff / (1000*60*60)); diff -= h*60*60*1000;
+  const m = Math.floor(diff / (1000*60)); diff -= m*60*1000;
+  const s = Math.floor(diff / 1000);
+
+  daysEl.textContent = d;
+  hoursEl.textContent = String(h).padStart(2,'0');
+  minsEl.textContent = String(m).padStart(2,'0');
+  secsEl.textContent = String(s).padStart(2,'0');
+}
+tick();
+tickId = setInterval(tick, 1000);
+
+// Confetti + themed emojis on click
+const countdown = document.getElementById('countdown');
+countdown.style.cursor = 'pointer';
+countdown.addEventListener('click', ()=>{
+  burstConfetti();
+  pulseSegments();
+});
+
+function pulseSegments(){
+  document.querySelectorAll('.cd-seg').forEach(seg=>{
+    seg.style.transform = 'scale(1.06)';
+    setTimeout(()=> seg.style.transform = 'scale(1)', 200);
+  });
+}
+
+function burstConfetti(){
+  const canvas = document.createElement('canvas');
+  canvas.width = innerWidth * devicePixelRatio;
+  canvas.height = innerHeight * devicePixelRatio;
+  Object.assign(canvas.style, {position:'fixed', inset:0, width:'100%', height:'100%', pointerEvents:'none', zIndex:9999});
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  const BLUE = '#3e68a0';
+  const COLORS = [BLUE, '#ffffff', '#dfe8fb'];
+  const EMOJIS = ['💙','💐','💫','🕊️','🎉'];
+
+  const pieces = [];
+  for(let i=0;i<180;i++){
+    pieces.push({
+      x: Math.random()*canvas.width,
+      y: canvas.height*0.4 + (Math.random()*40-20),
+      vx: (Math.random()-0.5)*6,
+      vy: (Math.random()-1.2)*6,
+      s: 4+Math.random()*8,
+      r: Math.random()*Math.PI,
+      col: COLORS[Math.floor(Math.random()*COLORS.length)]
+    });
+  }
+  // Emoji floaters
+  const emojiEls = [];
+  for(let i=0;i<22;i++){
+    const span = document.createElement('span');
+    span.textContent = EMOJIS[Math.floor(Math.random()*EMOJIS.length)];
+    Object.assign(span.style, {
+      position:'fixed', left:(Math.random()*100)+'vw', top:'50vh',
+      fontSize:(18+Math.random()*16)+'px', opacity:'1', transition:'transform 1.6s ease, opacity 1.6s ease',
+      zIndex:10000, pointerEvents:'none'
+    });
+    document.body.appendChild(span);
+    const dx = (Math.random()*60-30);
+    const dy = -(120 + Math.random()*120);
+    requestAnimationFrame(()=>{
+      span.style.transform = `translate(${dx}px, ${dy}px) rotate(${(Math.random()*360)|0}deg)`;
+      span.style.opacity = '0';
+    });
+    emojiEls.push(span);
+    setTimeout(()=> span.remove(), 1800);
+  }
+
+  let t=0, raf;
+  (function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    for(const p of pieces){
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.12; // gravity
+      p.r += 0.05;
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.r);
+      ctx.fillStyle = p.col;
+      ctx.fillRect(-p.s/2, -p.s/2, p.s, p.s*0.6);
+      ctx.restore();
+    }
+    t++;
+    if(t<120){ raf = requestAnimationFrame(draw); }
+    else { cancelAnimationFrame(raf); canvas.remove(); }
+  })();
+}
+</script>
+
+
+</body>
+</html>

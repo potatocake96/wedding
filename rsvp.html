@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>RSVP — Simon & Charlyn</title>
+  <link rel="stylesheet" href="assets/styles.css"/>
+  <style>
+    /* RSVP-only helpers (scoped & safe) */
+    [hidden]{display:none!important;}
+    .rsvp-card-shell .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    .rsvp-card-shell .rsvp-code-input{letter-spacing:.22em;text-align:center;font-size:20px;max-width:220px}
+    .btn-shimmer{position:relative;overflow:hidden}
+    .btn-shimmer::after{content:"";position:absolute;top:0;left:-100%;width:60%;height:100%;
+      background:linear-gradient(110deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.6) 45%, rgba(255,255,255,0) 90%);
+      transform:skewX(-20deg);animation:shimmer-slide 2.2s infinite}
+    @keyframes shimmer-slide{0%{left:-100%}60%,100%{left:140%}}
+
+    /* Dismissible popout modal */
+    .celebrate-modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:9998}
+    .celebrate-modal[hidden]{display:none}
+    .celebrate-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.25);backdrop-filter:blur(2px)}
+    .celebrate-card-pop{position:relative;z-index:1;background:rgba(255,255,255,.98);border:1px solid var(--border);
+      border-radius:18px;box-shadow:var(--shadow);padding:18px;width:min(92vw,460px);color:var(--ink);
+      animation:pop-in .22s var(--ease) both}
+    .celebrate-close{position:absolute;top:8px;right:10px;width:34px;height:34px;border-radius:50%;
+      border:1px solid var(--border);background:#fff;color:var(--ink);cursor:pointer;font-size:18px;line-height:32px}
+    @keyframes pop-in{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+  </style>
+<link rel="icon" href="assets/images/favicon.png" type="image/png">
+</head>
+
+<body>
+  <div class="wrap">
+    <main class="card rsvp-card-shell" role="main">
+      <header class="hero">
+        <div class="overline">RSVP</div>
+        <h1 class="names"><span class="name-top">RSVP</span></h1>
+      </header>
+
+      <!-- STEP 1: CODE WALL (visible first) -->
+      <section id="code-wall" class="stack">
+        <p class="helper">Enter the <strong>4-digit code</strong> from your invitation.</p>
+        <div class="row" style="justify-content:center">
+          <input id="rsvp-code" class="field rsvp-code-input" inputmode="numeric"
+                 pattern="[0-9]*" maxlength="4" placeholder="••••" aria-label="RSVP code">
+        </div>
+        <div class="row" style="justify-content:center">
+          <button id="code-continue" class="btn btn-primary">Continue</button>
+        </div>
+        <div id="code-msg" class="helper" hidden></div>
+      </section>
+
+      <!-- STEP 2: GROUP DETAILS (hidden until code is verified) -->
+      <section id="group-section" class="stack" hidden hidden hidden>
+        <header class="hero" style="margin-top:6px">
+          <div class="overline">You’re responding for</div>
+          <h2 id="group-name" class="names"><span class="name-top"></span></h2>
+        </header>
+
+        <!-- Your existing list hooks — do not rename IDs -->
+        <div id="guest-list" class="stack"></div>
+        <div id="notes-list" class="stack"></div>
+
+        <div class="row" style="justify-content:flex-end">
+          <button id="save-rsvp" class="btn btn-primary btn-shimmer">Save RSVP</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="site-footer">Code And Design By © Simon Dass</footer>
+
+  <!-- Dismissible celebration modal -->
+  <div id="celebrate-modal" class="celebrate-modal" hidden>
+    <div class="celebrate-backdrop" data-close="1"></div>
+    <div class="celebrate-card-pop" role="dialog" aria-modal="true" aria-labelledby="celebrate-title">
+      <button class="celebrate-close" aria-label="Close" data-close="1">×</button>
+      <h3 id="celebrate-title" class="celebrate-title">RSVP received 🎉</h3>
+      <p class="celebrate-msg">We’re excited to celebrate with you on the day!</p>
+      <div class="row" style="justify-content:center;margin-top:12px">
+        <button class="btn btn-primary celebrate-ok" data-close="1">Okay</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="assets/app.js"></script>
+  <script type="module" src="assets/rsvp_page.js"></script>
+
+  <!-- Lightweight emoji confetti (no deps) -->
+  <script>
+    window.fireConfetti = window.fireConfetti || function(){
+      const EMOJIS=['💙','💐','💫','🕊️','🎉'];
+      for(let i=0;i<28;i++){
+        const span=document.createElement('span');
+        span.textContent=EMOJIS[(Math.random()*EMOJIS.length)|0];
+        Object.assign(span.style,{position:'fixed',left:(Math.random()*100)+'vw',top:'-10vh',
+          transform:'translate(0,0)',fontSize:(18+Math.random()*14)+'px',
+          transition:'transform 1.2s ease, opacity 1.2s ease',opacity:'1',zIndex:10000,pointerEvents:'none'});
+        document.body.appendChild(span);
+        const dx=(Math.random()*120-60), dy=80+Math.random()*180;
+        requestAnimationFrame(()=>{ span.style.transform=`translate(${dx}px,${dy}vh) rotate(${(Math.random()*360)|0}deg)`; span.style.opacity='0'; });
+        setTimeout(()=>span.remove(),1300);
+      }
+    };
+  </script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
+</body>
+</html>
+
