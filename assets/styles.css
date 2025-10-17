@@ -18,7 +18,7 @@ body{
   font-family:"Cormorant Garamond", Georgia, serif;
   color:var(--ink);
   /* FULL-COLOUR toile, tiled, no opacity or blur */
-  background: url('assets/images/toile.png') repeat center top;
+  background: url('assets/images/toile.jpg') repeat center top;
   background-size: 620px; /* tweak tile size if needed */
   overflow-x:hidden;
 }
