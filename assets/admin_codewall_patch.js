@@ -37,7 +37,7 @@ function ensureUI(selectEl) {
   holder.style.gap = '8px';
   holder.style.marginTop = '8px';
   const pill = document.createElement('span'); pill.id='groupCode'; pill.className='chip'; pill.textContent='----';
-  const regen = document.createElement('button'); regen.id='regenCode'; regen.className='btn ghost'; regen.type='button'; regen.textContent='Regenerate';
+  const regen = document.createElement('button'); regen.id='regenCode'; regen.className='btn ghost'; regen.type='button'; regen.textContent='Generate';
   holder.append(pill, regen);
   row.insertAdjacentElement('afterend', holder);
   selectEl.addEventListener('change', updateCodePill);
